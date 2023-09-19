@@ -1,0 +1,73 @@
+version: '3'
+networks:
+  sanet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.15.10.1/24
+          gateway: 172.15.10.1
+services:
+  zookeeper:
+    ports:
+      - '50000:2181'
+    image: zookeeper:3.5.9
+    networks:
+          - sanet
+  kafka:
+    ports:
+      - '50001:9092'
+      - '50002:9093'
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENERS: 'PLAINTEXT://:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://172.15.10.10:9092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_CREATE_TOPICS: 'orders:1:1,product_summary:1:1'
+      KAFKA_ADVERTISED_HOST_NAME: '172.15.10.1' #host.docker.internal # change to 172.17.0.1 if running on Ubuntu
+    image: 'wurstmeister/kafka:2.13-2.8.1'
+    networks:
+      sanet:
+        ipv4_address: 172.15.10.10
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    restart: "no"
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "172.15.10.10:9092"
+      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+    depends_on:
+      - "kafka"
+    networks:
+      - sanet
+  consumer:
+    depends_on:
+      - kafka
+    environment:
+      TOPIC: orders
+      TOPIC_PRODUCT_SUMMARY: product_summary
+      ENVIRONMENT: local
+      INTERNAL_KAFKA_ADDR: '172.15.10.10:9092'
+    build:
+      context: ./consumer
+    networks:
+      - sanet
+  producer:
+    depends_on:
+      - kafka
+    environment:
+      TOPIC: orders
+      ENVIRONMENT: local
+      INTERNAL_KAFKA_ADDR: '172.15.10.10:9092'
+    build:
+      context: ./producer
+    networks:
+      - sanet
+volumes: {}
