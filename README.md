@@ -34,3 +34,24 @@ flowchart LR;
 * compute product summary in each window 5 seconds
 * publish to kafka output
 3. Kafka cluster
+4. Kafdrop tool for viewing messing in kafka
+
+## Testing
+- Assuming we are running docker service
+- Open terminal and change to project folder
+- Run this command to start services
+
+`
+docker-compose -f docker_compose.yml up
+`
+- That above command will start kafka cluster, kafkrop, producer, customer
+- We can view product_summary using http://localhost:9000
+- There are other useful commands to work with this project
+
+`
+docker-compose -f docker_compose.yml down
+`
+
+`
+docker-compose -f docker_compose.yml build
+`
