@@ -2,12 +2,12 @@ import json
 import random
 from kafka import KafkaProducer
 import os
-import math
 import time
+from datetime import datetime
 
-TOPIC = os.environ['TOPIC']
+TOPIC = os.environ['TOPIC_INPUT']
 INTERNAL_KAFKA_ADDR = os.environ['INTERNAL_KAFKA_ADDR']
-KEY = 'score'
+KEY = 'exception'
 
 
 def publish_message(producer_instance, topic_name, key, value):
@@ -35,18 +35,21 @@ def connect_kafka_producer():
 
 
 if __name__ == '__main__':
-    products = ('Keyboard', 'Mouse', 'Monitor', 'Laptop', 'PS5', 'SSD')
-    prod_prices = (25.00, 10.5, 140.00, 300.00, 1000.00, 450.00)
+    levels = ('CRITICAL', 'HIGH', 'ELEVATED')
+    codes = (100, 200, 300, 400, 500)
+
+    now = datetime.now()
     
 
     kafka_producer = connect_kafka_producer()
     for index in range(0, 100):
-        ranIdx = random.randint(0, 5)
+        level = levels[random.randint(0, 2)]
+        
         message = {
-            'account_id': str(math.floor(time.time()/1000)),
-            'product': products[ranIdx],
-            'amount': random.randint(1, 10),
-            'price': prod_prices[ranIdx],
+            'timestamp': now.strftime("%Y-%m-%dT%H:%M:%S%z"), # ISO 8601 format with timezone offset,
+            'level': level,
+            'code': str(codes[random.randint(0, 4)]),
+            'message': "This is a {} alert".format(level),
         }
 
         publish_message(kafka_producer, TOPIC, KEY, json.dumps(message))

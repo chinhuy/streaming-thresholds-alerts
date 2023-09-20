@@ -1,38 +1,36 @@
-# Streaming Analytics:
+# Streaming Thresholds and Alert:
 ## Use Case
-### Input Kafka topic: real time orders
+### Input Kafka topic: real time exception logs
 ### Data format: json
 `
 {
-    'account_id': '12345',
-    'product': "Keyboard",
-    'amount': 3,
-    'price': 150.00
+    'timestamp': '2023-09-20T05:20:39',
+    'level': "CRITICAL",
+    'code': "400",
+    'message': "This is a CRITICAL alert"
 }
 `
 ### Goals:
-- analyze every 5 seconds
-    - Product wise total value: amount * price
-    - Compute product summary
-- Publish the product summary result to product_summary topic
+- when level = CRITICAL, send to a topic for critical alerts
+- Same code occurs > two times in 10 seconds, send summary to a topic for high-volume alerts
 
 ## Design
 ```mermaid
 flowchart LR;
     kafka_input(Kafka Input)-->event(Json to Faust Stream);
-    event-->com(Compute Order Value);
-    com-->agg(Window: five seconds);
-    agg-->ps(Compute Product Summary)
-    ps-->output(Kafka Output);
+    event-->critical(Check If CRITICAL);
+    event-->window(Window by 10 sec);
+    critical-->toutput(Publish to CRITICAL topic);
+    window-->check2(Check > 2 and alerts by code)
+    check2-->tout2(Publish to High Volume topic);
 ```
 
 ## Implementation
 1. Producer service: generate order json data randomly and publish to kafka input
 2. Consumer service: 
 * consume stream data
-* compute order value
-* compute product summary in each window 5 seconds
-* publish to kafka output
+* compare CRITICAL issue and publish to kafka
+* compute and check exception appear > 2 in each window 10 seconds and publish to kafka
 3. Kafka cluster
 4. Kafdrop tool for viewing messing in kafka
 
@@ -55,3 +53,7 @@ docker-compose -f docker_compose.yml down
 `
 docker-compose -f docker_compose.yml build
 `
+
+## References
+- https://faust-streaming.github.io/faust/playbooks/vskafka.html
+- https://github.com/faust-streaming/faust

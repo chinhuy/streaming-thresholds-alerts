@@ -27,7 +27,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
-      KAFKA_CREATE_TOPICS: 'orders:1:1,product_summary:1:1'
+      KAFKA_CREATE_TOPICS: 'CRITICAL:1:1,HIGH-VOLUME:1:1,EXCEPTION-LOGS:1:1'
       KAFKA_ADVERTISED_HOST_NAME: '172.15.10.1' #host.docker.internal # change to 172.17.0.1 if running on Ubuntu
     image: 'wurstmeister/kafka:2.13-2.8.1'
     networks:
@@ -51,8 +51,9 @@ services:
     depends_on:
       - kafka
     environment:
-      TOPIC: orders
-      TOPIC_PRODUCT_SUMMARY: product_summary
+      TOPIC_INPUT: EXCEPTION-LOGS
+      TOPIC_CRITICAL: CRITICAL
+      TOPIC_HIGH_VOLUME: HIGH-VOLUME
       ENVIRONMENT: local
       INTERNAL_KAFKA_ADDR: '172.15.10.10:9092'
     build:
@@ -63,7 +64,7 @@ services:
     depends_on:
       - kafka
     environment:
-      TOPIC: orders
+      TOPIC_INPUT: EXCEPTION-LOGS
       ENVIRONMENT: local
       INTERNAL_KAFKA_ADDR: '172.15.10.10:9092'
     build:
